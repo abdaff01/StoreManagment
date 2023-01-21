@@ -1,252 +1,347 @@
-import tkinter
-from tkinter import *
+import sqlite3
+import tkinter as tk
+
+import tkinter as tk
 from tkinter import ttk
-import random
-from datetime import datetime
-import tkinter.messagebox
-
-class Store:
-
-    def __init__(self,root):
-        self.root = root
-        self.root.title("Store Management System")
-        self.root.geometry("1350x950+0+0")
-        self.root.configure(background='powder blue')
 
 
-        #=================Variables===================
+###############################################3
+import sqlite3
 
-        ProductType = StringVar()
-        ProductID = StringVar()
-        ProductName = StringVar()
-        Category = StringVar()
-        Quantity = IntVar()
-        ProductSize = StringVar()
-        ProductColor = StringVar()
-        QualityNote = StringVar()
-        SupplierName = StringVar()
-        SupplierID = StringVar()
-        Address1 = StringVar()
-        Address2 = StringVar()
-        ZipCode = StringVar()
-        PhoneNumber = IntVar()
-        ProductRank = StringVar()
+# Connect to the database
+conn = sqlite3.connect("store.db")
 
-        def iRest():
-            ProductType.set("")
-            ProductID.set("")
-            ProductName.set("")
-            Category.set("")
-            Quantity.set("")
-            ProductSize.set("")
-            ProductColor.set("")
-            QualityNote.set("")
-            SupplierName.set("")
-            SupplierID.set("")
-            Address1.set("")
-            Address2.set("")
-            ZipCode.set("")
-            PhoneNumber.set("")
-            ProductRank.set("")
+# Create a cursor
+cursor = conn.cursor()
 
-        def iDelete():
-            iRest()
-            self.txtDisplayR.delete("1.0", END)
+# Create the "products" table
+# query = """
+# CREATE TABLE products (
+#     id INTEGER PRIMARY KEY,
+#     name TEXT NOT NULL,
+#     type TEXT NOT NULL,
+#     size INTEGER NOT NULL,
+#     date DATE NOT NULL
+# );
+# """
+# cursor.execute(query)
 
-        def iExit():
-            iExit = tkinter.messagebox.askyesno("Store Management System", "Confirm if you want to exist")
-            if iExit>0:
-                root.destroy()
-                return
+# Commit the changes
+conn.commit()
 
-        def iDisplayData():
-            self.txtDisplayR.insert(END, "\t"+ ProductType.get()+"\t\t"+ProductID.get()+
-                                    "\t"+Category.get()+"\t"+ProductName.get()+"\t"+Quantity.get()
-                                    +"\t"+ProductSize.get()+"\t"+ProductColor.get()+"\n")
+# Close the connection
+conn.close()
 
-        def iReceipt():
-            self.txtDisplayR.insert(END,'Product Type: \t\t'+ ProductType.get()+"\n")
-            self.txtDisplayR.insert(END,'Product ID: \t\t'+ ProductID.get()+"\n")
-            self.txtDisplayR.insert(END,'Category: \t\t'+ Category.get()+"\n")
-            self.txtDisplayR.insert(END,'Product Name: \t\t'+ ProductName.get()+"\n")
-            self.txtDisplayR.insert(END,'Quantity: \t\t'+ Quantity.get()+"\n")
-            self.txtDisplayR.insert(END,'Product Size: \t\t'+ ProductSize.get()+"\n")
-            self.txtDisplayR.insert(END,'Product Color: \t\t'+ ProductColor.get()+"\n")
+################################################################
+# Connect to the database
+conn = sqlite3.connect('store.db')
 
+# Create a cursor object to execute queries
+cursor = conn.cursor()
 
+# Create the main window
+window = tk.Tk()
+window.title("Store Management")
 
-        #=============Frame===========================
+# Create the display window
+display_frame = tk.Frame(window)
+display_frame.pack()
 
-        MainFrame = Frame(self.root)
-        MainFrame.grid()
+# Create the products table
+table = ttk.Treeview(window)
+table["columns"] = ("id", "name", "type", "size", "date")
+table.column("id", width=50)
+table.column("name", width=150)
+table.column("type", width=100)
+table.column("size", width=100)
+table.column("date", width=100)
+table.heading("id", text="ID")
+table.heading("name", text="Name")
+table.heading("type", text="Type")
+table.heading("size", text="Size")
+table.heading("date", text="Date")
+table.pack()
 
-        TitleFrame = Frame(MainFrame, width=1350, padx=20, bd=23, relief=RIDGE)
-        TitleFrame.pack(side=TOP)
-        self.lblTitle = Label(TitleFrame, width=39,font=('arial', 40, 'bold'), padx=12)
-        self.lblTitle.grid()
+# Define a function to load the products table
+def load_table():
+    # Clear the current rows in the table
+    for i in table.get_children():
+        table.delete(i)
 
-        ButtonFrame = Frame(MainFrame, bd=20, width=1350, height=50, padx=20, relief=RIDGE)
-        ButtonFrame.pack(side=BOTTOM)
+    # Execute a SELECT query to retrieve all products
+    query = "SELECT * FROM products"
+    cursor.execute(query)
 
-        FrameDetail = Frame(MainFrame, bd=20, width=1350, height=100, padx=20, relief=RIDGE)
-        FrameDetail.pack(side=BOTTOM)
+    # Loop through the results and add them to the table
+    for row in cursor:
+        table.insert("", "end", values=row)
 
-        DataFrame = Frame(MainFrame, bd=20, width=1300, height=400, padx=20, relief=RIDGE)
-        DataFrame.pack(side=BOTTOM)
+# Add a search field
+search_label = tk.Label(display_frame, text="Search:")
+search_label.pack()
+search_entry = tk.Entry(display_frame)
+search_entry.pack()
 
-        DataFrameLEFT = LabelFrame(DataFrame, bd=10, width=800, height=300, padx=20, relief=RIDGE,
-                                   font=('arial', 12, 'bold'), text="Product details:")
-        DataFrameLEFT.pack(side=LEFT)
-
-        DataFrameRIGHT = LabelFrame(DataFrame, bd=10, width=450, height=300, padx=20, relief=RIDGE,
-                                   font=('arial', 12, 'bold'), text="Supplier details")
-        DataFrameRIGHT.pack(side=RIGHT)
-
-        #==========================Widget LEFT=====================#
-
-        self.lblMemberType = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product Type:",
-                                   padx=2, pady=2)
-        self.lblMemberType.grid(row=0, column=0, sticky=W)
-
-        self.cboMemberType = ttk.Combobox(DataFrameLEFT, font=('arial', 12, 'bold'), state="readonly",
-                                          textvariable=ProductType, width=23)
-        self.cboMemberType['value'] = ('Product 1', 'Product 2')
-        self.cboMemberType.current(0)
-        self.cboMemberType.grid(row=0, column=1)
-
-
-        self.lblProductID = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product ID:",
-                                   padx=2, pady=2)
-        self.lblProductID.grid(row=1, column=0, sticky=W)
-        self.txtProductID = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=ProductID, width=25)
-        self.txtProductID.grid(row=1, column=1)
-
-        self.lblCategory = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Category:",
-                                  padx=2, pady=2)
-        self.lblCategory.grid(row=2, column=0)
-        self.txtCategory = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=Category, width=25)
-        self.txtCategory.grid(row=2, column=1)
-
-        self.lblProductName = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product Name:",
-                                  padx=2, pady=2)
-        self.lblProductName.grid(row=3, column=0)
-        self.txtProductName = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=ProductName, width=25)
-        self.txtProductName.grid(row=3, column=1)
-
-        self.lblQuantity = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Quantity:",
-                                  padx=2, pady=2)
-        self.lblQuantity.grid(row=4, column=0)
-        self.txtQuantity = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=Quantity, width=25)
-        self.txtQuantity.grid(row=4, column=1)
-
-        self.lblSize = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product Size:",
-                                  padx=2, pady=2)
-        self.lblSize.grid(row=5, column=0)
-        self.txtSize = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=ProductSize, width=25)
-        self.txtSize.grid(row=5, column=1)
-
-        self.lblColor = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product Color:",
-                                  padx=2, pady=2)
-        self.lblColor.grid(row=6, column=0)
-        self.txtColor = Entry(DataFrameLEFT, font=('arial', 12, "bold"),textvariable=ProductColor, width=25)
-        self.txtColor.grid(row=6, column=1)
-
-        self.lblRank = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Product Rank:",
-                                  padx=2, pady=2)
-        self.lblRank.grid(row=7, column=0)
-
-        self.cboRank = ttk.Combobox(DataFrameLEFT, font=('arial', 12, 'bold'), state="readonly",
-                                          textvariable=ProductRank,width=23)
-        self.cboRank['value'] = ('Rank A', 'Rank B')
-        self.cboRank.current(0)
-        self.cboRank.grid(row=7, column=1)
-
-        self.lblQualityNote = Label(DataFrameLEFT, font=('arial', 12, "bold"), text="Quality Note:",
-                                  padx=2, pady=2)
-        self.lblQualityNote.grid(row=8, column=0)
-        self.txtQualityNote = tkinter.Text(DataFrameLEFT, width=25, height=3, font=('arial', 12, "bold"))
-        self.txtQualityNote.grid(row=8, column=1)
-
-        #==========================Widget RIGHT=====================#
-
-        self.lblSupplierName = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Supplier Name:",
-                                  padx=2, pady=2)
-        self.lblSupplierName.grid(row=0, column=0)
-        self.txtSupplierName = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtSupplierName.grid(row=0, column=1)
-
-        self.lblSupplierID = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Supplier ID:",
-                                  padx=2, pady=2)
-        self.lblSupplierID.grid(row=1, column=0)
-        self.txtSupplierID = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtSupplierID.grid(row=1, column=1)
-
-        self.lblSupplierAdd1 = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Address 1:",
-                                  padx=2, pady=2)
-        self.lblSupplierAdd1.grid(row=2, column=0)
-        self.txtSupplierAdd1 = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtSupplierAdd1.grid(row=2, column=1)
-
-        self.lblSupplierAdd2 = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Address 2:",
-                                  padx=2, pady=2)
-        self.lblSupplierAdd2.grid(row=3, column=0)
-        self.txtSupplierAdd2 = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtSupplierAdd2.grid(row=3, column=1)
-
-        self.lblZipCode = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Postal Code:",
-                                  padx=2, pady=2)
-        self.lblZipCode.grid(row=4, column=0)
-        self.txtZipCode = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtZipCode.grid(row=4, column=1)
-
-        self.lblPhoneNum = Label(DataFrameRIGHT, font=('arial', 12, "bold"), text="Phone Number:",
-                                  padx=2, pady=2)
-        self.lblPhoneNum.grid(row=5, column=0)
-        self.txtPhoneNum = Entry(DataFrameRIGHT, font=('arial', 12, "bold"), width=25)
-        self.txtPhoneNum.grid(row=5, column=1)
-
-
-        #======================================================
-
-        self.lblLabel = Label(FrameDetail, font=('arial', 10, "bold"), pady=8,
-                              text="Product Type\t Product ID\t Category\t Product Name\t "
-                                   "Quantity\t Product size\t Product Color")
-        self.lblLabel.grid(row=0,column=0)
-
-        self.txtDisplayR = Text(FrameDetail, font=('arial', 12, "bold"), width=141,
-                                height=4, padx=2, pady=2)
-        self.txtDisplayR.grid(row=1, column=0)
-
-        #==================Button===========================#
-        self.btnDisplayData = Button(ButtonFrame, text='Display Data', font=('arial', 12, 'bold'),
-                                     width=30, bd=4)
-        self.btnDisplayData.grid(row=0, column=0)
-
-        self.btnDelete = Button(ButtonFrame, text='Delete', font=('arial', 12, 'bold'),
-                                     width=30, bd=4,command=iDelete)
-        self.btnDelete.grid(row=0, column=1)
-
-        self.btnRest = Button(ButtonFrame, text='Rest', font=('arial', 12, 'bold'),
-                                     width=30, bd=4, command=iRest)
-        self.btnRest.grid(row=0, column=2)
-
-        self.btnExit = Button(ButtonFrame, text='Exit', font=('arial', 12, 'bold'),
-                                     width=30, bd=4, command=iExit)
-        self.btnExit.grid(row=0, column=3)
+# Create the search button
+search_button = tk.Button(window, text="Search")
+search_button.pack()
 
 
 
+# Define the logic for the "Choosing type " button
+def open_window_types():
+    # Open a new window
+    new_window = tk.Toplevel(window)
+    new_window.title("Please choose the type you wanna add")
 
-if __name__ =='__main__':
-    root = Tk()
-    application = Store(root)
-    root.mainloop()
+    # Create the first button
+    button1 = tk.Button(new_window, text="Type S")
+    button1.pack()
 
+    # Create the second button
+    button2 = tk.Button(new_window, text="Type R")
+    button2.pack()
+    # Assign the "Add" button logic to the button
+    button1.config(command=add_product)
+
+
+# Define the logic for the search button
+def search_products():
+    # Retrieve the search query from the search field
+    query = search_entry.get()
+
+    # Clear the current rows in the table
+    for i in table.get_children():
+        table.delete(i)
+
+    # Execute a SELECT query to search for products
+    search_query = "SELECT * FROM products WHERE name LIKE ? OR type LIKE ? OR size LIKE ? OR date LIKE ?"
+    search_values = ("%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%")
+    cursor.execute(search_query, search_values)
+
+    # Loop through the results and add them to the table
+    for row in cursor:
+        table.insert("", "end", values=row)
+
+# Assign the search button logic to the button
+search_button.config(command=search_products)
+
+# Add a filter icon
+filter_label = tk.Label(display_frame, text="Filter:")
+filter_label.pack()
+filter_entry = tk.Entry(display_frame)
+filter_entry.pack()
+
+# Add a button to add a new product
+# add_button = tk.Button(window, text="Open Window", command=open_window_types)
+# add_button.pack()
+
+# Add a button to add a new product
+modify_button = tk.Button(display_frame, text="Add", command=open_window_types)
+modify_button.pack()
+
+# Add a button to modify a selected product
+modify_button = tk.Button(display_frame, text="Modify")
+modify_button.pack()
+
+# Add a button to delete a selected product
+delete_button = tk.Button(display_frame, text="Delete")
+delete_button.pack()
+
+# Add a button to display the details of a selected product
+details_button = tk.Button(display_frame, text="Details")
+details_button.pack()
+
+
+# Define the logic for the "Add" button
+def add_product():
+    # Open a new window to add a new product
+    add_window = tk.Toplevel(window)
+    add_window.title("Add Product")
+
+    # Add a field for the product name
+    name_label = tk.Label(add_window, text="Name:")
+    name_label.pack()
+    name_entry = tk.Entry(add_window)
+    name_entry.pack()
+
+    # Add a field for the product type
+    type_label = tk.Label(add_window, text="Type:")
+    type_label.pack()
+    type_entry = tk.Entry(add_window)
+    type_entry.pack()
+
+    # Add a field for the product size
+    size_label = tk.Label(add_window, text="Size:")
+    size_label.pack()
+    size_entry = tk.Entry(add_window)
+    size_entry.pack()
+
+    # Add a field for the product date
+    date_label = tk.Label(add_window, text="Date:")
+    date_label.pack()
+    date_entry = tk.Entry(add_window)
+    date_entry.pack()
+
+    # Add a button to save the new product
+    save_button = tk.Button(add_window, text="Save",
+                            command=lambda: save_product(add_window, name_entry.get(), type_entry.get(),
+                                                         size_entry.get(), date_entry.get()))
+    save_button.pack()
+
+    # Define the logic for the "Save" button in the "Add" window
+    def save_product(add_window, name, product_type, size, date):
+        # Insert the new product into the database
+        query = "INSERT INTO products (name, type, size, date) VALUES (?, ?, ?, ?)"
+        values = (name, product_type, size, date)
+        cursor.execute(query, values)
+        conn.commit()
+
+        # Close the "Add" window
+        add_window.destroy()
+
+        # Reload the table in the main window
+        load_table()
+
+    # Create the "Save" button in the "Add" window
+    save_button = tk.Button(add_window, text="Save")
+    save_button.pack()
+
+    # Assign the "Save" button logic to the button
+    save_button.config(command=lambda: save_product(add_window, name_entry.get(), type_entry.get(), size_entry.get(),
+                                                    date_entry.get()))
+
+
+# Define the logic for the "Save" button in the "Add" window
+def save_product(add_window, name, product_type, size, date):
+    # Insert the new product into the database
+    query = "INSERT INTO products (name, type, size, date) VALUES (?, ?, ?, ?)"
+    values = (name, product_type, size, date)
+    cursor.execute(query, values)
+    conn.commit()
+
+    # Close the "Add" window
+    add_window.destroy()
+
+    # Reload the table in the main window
+    load_table()
+
+# Define a function to load the products table
+def load_table():
+    # Clear the current rows in the table
+    for i in table.get_children():
+        table.delete(i)
+
+    # Execute a SELECT query to retrieve all products
+    query = "SELECT * FROM products"
+    cursor.execute(query)
+
+    # Loop through the results and add them to the table
+    for row in cursor:
+        table.insert("", "end", values=row)
+    #
+    # # Assign the "Save" button logic to the button
+    # save_button.config(command=lambda: save_product(add_window, name_entry.get(), type_entry.get(), size_entry.get(), date_entry.get()))
 
 
 
 
 
+# Define the logic for the "Modify" button
+def modify_product():
+    # Open a new window to modify a selected product
+    modify_window = tk.Toplevel(window)
+    modify_window.title("Modify Product")
+
+    # Add a field for the product name
+    name_label = tk.Label(modify_window, text="Name:")
+    name_label.pack()
+    name_entry = tk.Entry(modify_window)
+    name_entry.pack()
+
+    # Add a field for the product type
+    type_label = tk.Label(modify_window, text="Type:")
+    type_label.pack()
+    type_entry = tk.Entry(modify_window)
+    type_entry.pack()
+
+    # Add a field for the product size
+    size_label = tk.Label(modify_window, text="Size:")
+    size_label.pack()
+    size_entry = tk.Entry(modify_window)
+    size_entry.pack()
+
+    # Add a field for the product date
+    date_label = tk.Label(modify_window, text="Date:")
+    date_label.pack()
+    date_entry = tk.Entry(modify_window)
+    date_entry.pack()
+
+    # Add a button to save the modified product
+    save_button = tk.Button(modify_window, text="Save",
+                            command=lambda: save_modified_product(name_entry.get(), type_entry.get(), size_entry.get(),
+                                                                  date_entry.get()))
+    save_button.pack()
+
+# Assign the "Modify" button logic to the button
+modify_button.config(command=modify_product)
+
+# Define the logic for the "Save" button in the "Modify" window
+def save_modified_product(name, product_type, size, date):
+    # Update the modified product in the database
+    query = "UPDATE products SET name=?, type=?, size=?, date=? WHERE id=?"
+    values = (name, product_type, size, date, selected_product_id)
+    cursor.execute(query, values)
+    conn.commit()
+
+    # Close the "Modify" window
+    modify_window.destroy()
 
 
+# Define the logic for the "Delete" button
+def delete_product():
+    # Delete the selected product from the database
+    query = "DELETE FROM products WHERE id=?"
+    values = (selected_product_id,)
+    cursor.execute(query, values)
+    conn.commit()
 
+# Assign the "Delete" button logic to the button
+delete_button.config(command=delete_product)
+
+# Define the logic for the "Details" button
+def display_details():
+    # Open a new window to display the details of a selected product
+    details_window = tk.Toplevel(window)
+    details_window.title("Product Details")
+
+    # Query the database to retrieve the details of the selected product
+    query = "SELECT * FROM products WHERE id=?"
+    values = (selected_product_id,)
+    cursor.execute(query, values)
+    result = cursor.fetchone()
+
+    # Extract the product details from the result
+    name = result[1]
+    product_type = result[2]
+    size = result[3]
+    date = result[4]
+
+    # Display the product details in the "Details" window
+    name_label = tk.Label(details_window, text=f"Name: {name}")
+    name_label.pack()
+    type_label = tk.Label(details_window, text=f"Type: {product_type}")
+    type_label.pack()
+    size_label = tk.Label(details_window, text=f"Size: {size}")
+    size_label.pack()
+    date_label = tk.Label(details_window, text=f"Date: {date}")
+    date_label.pack()
+
+# Assign the "Details" button logic to the button
+details_button.config(command=display_details)
+
+# Start the main loop
+window.mainloop()
+
+# Close the connection to the database
+conn.close()
