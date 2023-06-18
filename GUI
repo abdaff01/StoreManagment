@@ -3,12 +3,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHB
 
 
 class AddProductDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, category_counters, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Add Product")
         self.setGeometry(200, 200, 300, 200)
 
-        self.category_counters = {"Category 1": 0, "Category 2": 0}
+        self.category_counters = category_counters
         self.init_ui()
 
     def init_ui(self):
@@ -52,13 +52,16 @@ class AddProductDialog(QDialog):
             self.show_message_box("Error", "Please enter a product name.")
             return
 
-        self.category_counters[category] += 1
         counter = self.category_counters[category]
-        product_id = f"{category[0]}{counter}"
+        if category == "Category 1":
+            key = f"S{counter}"
+        elif category == "Category 2":
+            key = f"R{counter}"
+
+        self.category_counters[category] += 1
 
         self.accept()
-
-        self.parent().add_product_to_table(product_id, category, name, color, quantity)
+        self.parent().add_product_to_table(key, category, name, color, quantity)
 
     def show_message_box(self, title, message):
         msg_box = QMessageBox()
@@ -74,7 +77,7 @@ class MarbleWindow(QMainWindow):
         self.setWindowTitle("Marble Products")
         self.setGeometry(100, 100, 600, 400)
 
-        self.category_counters = {"Category 1": 0, "Category 2": 0}
+        self.category_counters = {"Category 1": 1, "Category 2": 1}
         self.init_ui()
 
     def init_ui(self):
@@ -140,15 +143,15 @@ class MarbleWindow(QMainWindow):
         self.filter_button.clicked.connect(self.filter_table)
 
     def show_add_product_dialog(self):
-        dialog = AddProductDialog(self)
+        dialog = AddProductDialog(self.category_counters, self)
         if dialog.exec_() == QDialog.Accepted:
             pass
 
-    def add_product_to_table(self, product_id, category, name, color, quantity):
+    def add_product_to_table(self, key, category, name, color, quantity):
         row_count = self.table_widget.rowCount()
         self.table_widget.setRowCount(row_count + 1)
 
-        self.table_widget.setItem(row_count, 0, QTableWidgetItem(product_id))
+        self.table_widget.setItem(row_count, 0, QTableWidgetItem(key))
         self.table_widget.setItem(row_count, 1, QTableWidgetItem(category))
         self.table_widget.setItem(row_count, 2, QTableWidgetItem(name))
         self.table_widget.setItem(row_count, 3, QTableWidgetItem(color))
@@ -165,7 +168,7 @@ class MarbleWindow(QMainWindow):
     def modify_product(self):
         selected_row = self.table_widget.currentRow()
         if selected_row != -1:
-            product_id = self.table_widget.item(selected_row, 0).text()
+            key_item = self.table_widget.item(selected_row, 0)
             category = self.category_combo.currentText()
             name = self.name_input.text()
             color = self.color_input.text()
@@ -175,6 +178,7 @@ class MarbleWindow(QMainWindow):
                 self.show_message_box("Error", "Please enter a product name.")
                 return
 
+            key = key_item.text()
             self.table_widget.setItem(selected_row, 1, QTableWidgetItem(category))
             self.table_widget.setItem(selected_row, 2, QTableWidgetItem(name))
             self.table_widget.setItem(selected_row, 3, QTableWidgetItem(color))
@@ -206,21 +210,13 @@ class MarbleWindow(QMainWindow):
             color_item = self.table_widget.item(row, 3)
             quantity_item = self.table_widget.item(row, 4)
 
-            category_match = category == "All" or category_item.text() == category
-            name_match = name == "" or name_item.text().lower().startswith(name.lower())
-            color_match = color == "" or color_item.text().lower().startswith(color.lower())
-            quantity_match = quantity == "" or quantity_item.text() == quantity
-
-            if category_match and name_match and color_match and quantity_match:
-                self.table_widget.setRowHidden(row, False)
+            if (category == "All" or category == category_item.text()) and \
+                    (name == "" or name == name_item.text()) and \
+                    (color == "" or color == color_item.text()) and \
+                    (quantity == "" or quantity == quantity_item.text()):
+                self.table_widget.showRow(row)
             else:
-                self.table_widget.setRowHidden(row, True)
-
-    def clear_input_fields(self):
-        self.category_combo.setCurrentIndex(0)
-        self.name_input.clear()
-        self.color_input.clear()
-        self.quantity_input.clear()
+                self.table_widget.hideRow(row)
 
     def show_message_box(self, title, message):
         msg_box = QMessageBox()
@@ -230,16 +226,21 @@ class MarbleWindow(QMainWindow):
         msg_box.exec_()
 
     def show_confirmation_box(self, title, message):
-        confirm_box = QMessageBox()
-        confirm_box.setWindowTitle(title)
-        confirm_box.setText(message)
-        confirm_box.setIcon(QMessageBox.Question)
-        confirm_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        confirm_box.setDefaultButton(QMessageBox.No)
-        return confirm_box.exec_() == QMessageBox.Yes
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        return msg_box.exec_() == QMessageBox.Yes
+
+    def clear_input_fields(self):
+        self.category_combo.setCurrentIndex(0)
+        self.name_input.clear()
+        self.color_input.clear()
+        self.quantity_input.clear()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MarbleWindow()
     window.show()
