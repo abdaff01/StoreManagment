@@ -1,0 +1,190 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox
+
+
+class MarbleWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Marble Products")
+        self.setGeometry(100, 100, 600, 400)
+
+        self.category_counters = {"Category 1": 0, "Category 2": 0}
+        self.init_ui()
+
+    def init_ui(self):
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        # Create table widget
+        self.table_widget = QTableWidget()
+        self.table_widget.setColumnCount(5)
+        self.table_widget.setHorizontalHeaderLabels(["ID", "Category", "Name", "Color", "Quantity"])
+
+        # Create labels and input fields for adding/modifying products
+        self.category_label = QLabel("Category:")
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(["Category 1", "Category 2"])
+
+        self.name_label = QLabel("Name:")
+        self.name_input = QLineEdit()
+
+        self.color_label = QLabel("Color:")
+        self.color_input = QLineEdit()
+
+        self.quantity_label = QLabel("Quantity:")
+        self.quantity_input = QLineEdit()
+
+        # Create buttons
+        self.add_button = QPushButton("Add")
+        self.delete_button = QPushButton("Delete")
+        self.modify_button = QPushButton("Modify")
+        self.search_button = QPushButton("Search")
+        self.filter_button = QPushButton("Filter")
+
+        # Create layout
+        main_layout = QVBoxLayout()
+        self.central_widget.setLayout(main_layout)
+
+        input_layout = QHBoxLayout()
+        input_layout.addWidget(self.category_label)
+        input_layout.addWidget(self.category_combo)
+        input_layout.addWidget(self.name_label)
+        input_layout.addWidget(self.name_input)
+        input_layout.addWidget(self.color_label)
+        input_layout.addWidget(self.color_input)
+        input_layout.addWidget(self.quantity_label)
+        input_layout.addWidget(self.quantity_input)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.delete_button)
+        button_layout.addWidget(self.modify_button)
+        button_layout.addWidget(self.search_button)
+        button_layout.addWidget(self.filter_button)
+
+        main_layout.addWidget(self.table_widget)
+        main_layout.addLayout(input_layout)
+        main_layout.addLayout(button_layout)
+
+        # Connect buttons to their respective functions
+        self.add_button.clicked.connect(self.add_product)
+        self.delete_button.clicked.connect(self.delete_product)
+        self.modify_button.clicked.connect(self.modify_product)
+        self.search_button.clicked.connect(self.search_product)
+        self.filter_button.clicked.connect(self.filter_table)
+
+    def add_product(self):
+        category = self.category_combo.currentText()
+        name = self.name_input.text()
+        color = self.color_input.text()
+        quantity = self.quantity_input.text()
+
+        if not name:
+            self.show_message_box("Error", "Please enter a product name.")
+            return
+
+        self.category_counters[category] += 1
+        counter = self.category_counters[category]
+        product_id = f"{category[0]}{counter}"
+
+        row_count = self.table_widget.rowCount()
+        self.table_widget.setRowCount(row_count + 1)
+
+        self.table_widget.setItem(row_count, 0, QTableWidgetItem(product_id))
+        self.table_widget.setItem(row_count, 1, QTableWidgetItem(category))
+        self.table_widget.setItem(row_count, 2, QTableWidgetItem(name))
+        self.table_widget.setItem(row_count, 3, QTableWidgetItem(color))
+        self.table_widget.setItem(row_count, 4, QTableWidgetItem(quantity))
+
+        self.clear_input_fields()
+
+    def delete_product(self):
+        selected_rows = self.table_widget.selectionModel().selectedRows()
+        if selected_rows:
+            result = self.show_confirmation_box("Confirmation", "Are you sure you want to delete the selected product(s)?")
+            if result:
+                for row in reversed(selected_rows):
+                    self.table_widget.removeRow(row.row())
+
+    def modify_product(self):
+        selected_row = self.table_widget.currentRow()
+        if selected_row != -1:
+            product_id = self.table_widget.item(selected_row, 0).text()
+            category = self.category_combo.currentText()
+            name = self.name_input.text()
+            color = self.color_input.text()
+            quantity = self.quantity_input.text()
+
+            if not name:
+                self.show_message_box("Error", "Please enter a product name.")
+                return
+
+            self.table_widget.setItem(selected_row, 1, QTableWidgetItem(category))
+            self.table_widget.setItem(selected_row, 2, QTableWidgetItem(name))
+            self.table_widget.setItem(selected_row, 3, QTableWidgetItem(color))
+            self.table_widget.setItem(selected_row, 4, QTableWidgetItem(quantity))
+
+            self.clear_input_fields()
+
+    def search_product(self):
+        search_text = self.name_input.text()
+        rows = self.table_widget.rowCount()
+
+        for row in range(rows):
+            item = self.table_widget.item(row, 2)
+            if item.text() == search_text:
+                self.table_widget.setCurrentCell(row, 2)
+                break
+
+    def filter_table(self):
+        category = self.category_combo.currentText()
+        name = self.name_input.text()
+        color = self.color_input.text()
+        quantity = self.quantity_input.text()
+
+        rows = self.table_widget.rowCount()
+
+        for row in range(rows):
+            category_item = self.table_widget.item(row, 1)
+            name_item = self.table_widget.item(row, 2)
+            color_item = self.table_widget.item(row, 3)
+            quantity_item = self.table_widget.item(row, 4)
+
+            category_match = category == "All" or category_item.text() == category
+            name_match = name == "" or name_item.text().lower().startswith(name.lower())
+            color_match = color == "" or color_item.text().lower().startswith(color.lower())
+            quantity_match = quantity == "" or quantity_item.text() == quantity
+
+            if category_match and name_match and color_match and quantity_match:
+                self.table_widget.setRowHidden(row, False)
+            else:
+                self.table_widget.setRowHidden(row, True)
+
+    def clear_input_fields(self):
+        self.category_combo.setCurrentIndex(0)
+        self.name_input.clear()
+        self.color_input.clear()
+        self.quantity_input.clear()
+
+    def show_message_box(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.exec_()
+
+    def show_confirmation_box(self, title, message):
+        confirm_box = QMessageBox()
+        confirm_box.setWindowTitle(title)
+        confirm_box.setText(message)
+        confirm_box.setIcon(QMessageBox.Question)
+        confirm_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        confirm_box.setDefaultButton(QMessageBox.No)
+        return confirm_box.exec_() == QMessageBox.Yes
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = MarbleWindow()
+    window.show()
+    sys.exit(app.exec_())
